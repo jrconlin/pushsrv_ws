@@ -1,0 +1,24 @@
+Chameleon==2.11
+Mako==0.7.3
+MarkupSafe==0.15
+PasteDeploy==1.5.0
+SQLAlchemy==0.8.0b2
+WebOb==1.2.3
+argparse==1.2.1
+cef==0.5
+distribute==0.6.24
+-e git://github.com/mozilla-services/mozservices.git@73788086d6f02e239cb840f308e173f4e0ea4bfb#egg=mozsvc-dev
+nose==1.2.1
+pyramid==1.4
+python-dateutil==2.1
+repoze.lru==0.6
+simplejson==3.1.0
+six==1.2.0
+tornado==2.4.1
+translationstring==1.1
+umemcache==1.6
+unittest2==0.5.1
+venusian==1.0a7
+wsgiref==0.1.2
+zope.deprecation==4.0.2
+zope.interface==4.0.5
