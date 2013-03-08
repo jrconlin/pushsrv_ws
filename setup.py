@@ -6,7 +6,7 @@
 import os
 from setuptools import setup, find_packages
 
-PROJECT = 'simplepush_ws'
+PROJECT = 'pushsrv_ws'
 
 here = os.path.abspath(os.path.dirname(__file__))
 

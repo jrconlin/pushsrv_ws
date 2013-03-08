@@ -18,10 +18,10 @@ test:
 	$(NO) $(APPNAME)
 
 run:
-	$(PS) $(APPNAME)-local.ini
+	$(PY) pushsrv_ws/
 
-fl:
-   	FL_CONF_DIR=./fl $(PY) fl/test_simple.py
+#fl:
+#   	FL_CONF_DIR=./fl $(PY) fl/test_simple.py
 
 clean:
 	rm -rf bin/ include/ lib/ local/ man/ src/
