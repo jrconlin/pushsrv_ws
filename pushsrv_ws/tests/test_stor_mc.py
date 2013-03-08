@@ -32,15 +32,15 @@ class TestStorage(unittest2.TestCase):
         rec = self.storage._get_record('111.aaa')
         self.assertEqual(int(rec.get('version')), 2)
 
-    def test_register_chids(self):
+    def test_register_appids(self):
         self.load()
-        self.storage.register_chid('444', 'ddd', FakeLogger())
+        self.storage.register_appid('444', 'ddd', FakeLogger())
         rec = self.storage._get_record('444.ddd')
         self.assertEqual(rec.get('uaid'), '444')
 
-    def test_delete_chid(self):
+    def test_delete_appid(self):
         self.load()
-        self.storage.delete_chid('111', 'aaa', FakeLogger())
+        self.storage.delete_appid('111', 'aaa', FakeLogger())
         rec = self.storage._get_record('111.aaa')
         assert (rec is not None)
         self.assertEqual(rec.get('state'), 0)

@@ -51,6 +51,7 @@ class Storage(SqlStorage):
                                                                logger)
                 return True
             else:
+                return self.register_appid(None, pk, logger, vers)
         except Exception, e:
             warnings.warn(repr(e))
             if logger:
