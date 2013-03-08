@@ -12,6 +12,7 @@ build:
 	$(VE) --no-site-packages .
 	bin/easy_install -U distribute
 	$(PI) install -r prod-reqs.txt
+	cp -n pushsrv-dist.ini pushsrv.ini
 	$(PY) setup.py develop
 
 test:
