@@ -45,3 +45,4 @@ class StorageBase(object):
         """ Purge all listings (ONLY FOR TESTING) """
         raise StorageException('Undefined required method: ' %
                                stack()[0][3])
+

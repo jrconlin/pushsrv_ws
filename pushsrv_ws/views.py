@@ -2,7 +2,7 @@ import tornado.web
 import json
 import traceback
 from utils import gen_id, get_last_accessed, gen_endpoint
-from .constants import LOG, VERS
+from .constants import LOG
 from .storage import StorageException
 
 
@@ -14,6 +14,10 @@ class RESTPushBase(tornado.web.RequestHandler):
         self.config = config
         self.flags = flags
         self.dispatch = dispatch
+
+
+""" Handlers for REST functions.
+"""
 
 
 class RegisterHandler(RESTPushBase):
@@ -63,11 +67,10 @@ class UpdateHandler(RESTPushBase):
         if not uaid:
             return self.write_error(403)
         try:
-            import pdb; pdb.set_trace()
-            data = json.loads(request.body)
-            # we don't really care what the old data was.
-            #digest = self.storage.reload_data
-            # TODO: Generate the return digest as an ACK
+            # we don't really care what the old data was,
+            # but if we did, we'd do something like the following:
+            #data = json.loads(self.request.body)
+            #digest = self.storage.reload_data(data)
             return self.write(json.dumps({'digest': []}))
         except Exception:
             self.logger.log(msg=traceback.format_exc(), type='error',
@@ -84,7 +87,6 @@ class UpdateHandler(RESTPushBase):
             return self.send_error(403)
         (uaid, channelID) = gid.split('.')
         try:
-            import pdb; pdb.set_trace();
             if self.storage.update_channel(gid, version, self.logger):
                 if self.dispatch:
                     self.dispatch.queue(uaid, channelID, version)

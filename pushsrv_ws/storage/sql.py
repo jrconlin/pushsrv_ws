@@ -103,12 +103,12 @@ class Storage(StorageBase):
                 rec.state = self.LIVE
                 rec.last = int(time.time())
                 session.commit()
-                return True
             else:  # ES
-                self.register_appid(None, pk, logger, vers)
-                return True;
+                return self.register_appid(None, pk, logger, vers)
+            return True
         except Exception, e:
             warnings.warn(repr(e))
+            session.rollback()
             if logger:
                 logger.log(msg="Uncaught error %s " % repr(e),
                            type='error', severity=LOG.WARNING)
@@ -132,13 +132,14 @@ class Storage(StorageBase):
                                       last=int(time.time())))
             session.commit()
         except Exception, e:
+            import pdb; pdb.set_trace()
             warnings.warn(repr(e))
             if logger:
                 logger.log(type='error', severity=LOG.ERROR, msg=repr(e))
             return False
         return True
 
-    def delete_appid(self, uaid, appid, logger):
+    def delete_appid(self, uaid, appid, logger, clearOnly=False):
         if appid is None or uaid is None:
             return False
         try:
@@ -150,8 +151,10 @@ class Storage(StorageBase):
                 pk = '%s.%s' % (uaid, appid)
             rec = session.query(SimplePushSQL).filter_by(pk=pk).first()
             if rec:
-                rec.state = self.DELETED
-                #rec.delete()
+                if clearOnly:
+                    session.delete(rec)
+                else:
+                    rec.state = self.DELETED
                 session.commit()
         except Exception, e:
             warnings.warn(repr(e))

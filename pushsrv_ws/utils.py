@@ -9,7 +9,6 @@ def str_to_UTC(datestr):
         timet = eut.parsedate_tz(datestr)
         secs = int(calendar.timegm(timet[:8])) + timet[9]
     except Exception, e:
-        import pdb; pdb.set_trace();
         raise e
     return secs
 

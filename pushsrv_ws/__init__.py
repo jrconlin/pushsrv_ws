@@ -1,12 +1,17 @@
-from tornado.options import define
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+"""Main entry point
+"""
+
 from ConfigParser import (ConfigParser, NoSectionError)
+from pushsrv_ws.constants import LOG
+from pushsrv_ws.utils import _resolve_name
 from pushsrv_ws.views import (RegisterHandler, ItemHandler, UpdateHandler)
+from tornado.options import define
 import tornado.web
 import tornado.websocket
-from pushsrv_ws.utils import _resolve_name
-from pushsrv_ws.constants import LOG
-from pushsrv_ws.websock import (PushWSHandler)
-
+import traceback
 
 define("config", default="pushsrv.ini", help="Configuration file path")
 
@@ -16,8 +21,7 @@ def safe_get(config, section, key, default=None):
         cf = dict(config.items(section))
         return cf.get(key, default)
     except Exception, e:
-        import pdb; pdb.set_trace()
-        print e
+        traceback.print_exc()
         return default
 
 
@@ -41,8 +45,8 @@ def main(options):
 
     # Websocket Handler (NOTE, this is initialized on call)
     wshandler = _resolve_name(safe_get(configp, 'app:main',
-                            'websockhandler.backend',
-                            'pushsrv_ws.websock.PushWSHandler'))
+                                       'websockhandler.backend',
+                                       'pushsrv_ws.websock.PushWSHandler'))
     init_args = {'config': config,
                  'storage': storage,
                  'flags': flags,

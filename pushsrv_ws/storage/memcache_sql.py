@@ -40,7 +40,7 @@ class Storage(SqlStorage):
 
         try:
             record, cas = self.mc.gets(pk)
-            if record:
+            if record and record['s'] != self.DELETED:
                 record['v'] = vers
                 record['s'] = self.LIVE
                 record['l'] = int(time.time())
@@ -50,6 +50,7 @@ class Storage(SqlStorage):
                     return super(Storage, self).update_channel(pk, vers,
                                                                logger)
                 return True
+            else:
         except Exception, e:
             warnings.warn(repr(e))
             if logger:
@@ -58,19 +59,19 @@ class Storage(SqlStorage):
             raise e
         return False
 
-    def register_chid(self, uaid, chid, logger, version=None):
+    def register_appid(self, uaid, appid, logger, version=None):
         try:
-            chidarr, cas = self.mc.gets(uaid)
-            if chidarr is None:
-                chidarr = []
-            if chid in chidarr:
+            appidarr, cas = self.mc.gets(uaid)
+            if appidarr is None:
+                appidarr = []
+            if appid in appidarr:
                 return False
             # Temp patch until all code transitioned to pk
-            if '.' in chid:
-                pk = chid
-                uaid, chid = pk.split('.')
+            if '.' in appid:
+                pk = appid
+                uaid, appid = pk.split('.')
             else:
-                pk = '%s.%s' % (uaid, chid)
+                pk = '%s.%s' % (uaid, appid)
             # don't re-register.
             rec = self.mc.get(pk)
             if rec:
@@ -78,19 +79,23 @@ class Storage(SqlStorage):
             data = {'v': version,
                     's': self.REGISTERED,
                     'l': int(time.time())}
-            if not self.mc.add(pk, data, self.timeout_reg):
+            timeout = self.timeout_reg
+            if version:
+                data['s'] = self.LIVE
+                timeout = self.timeout_live
+            if not self.mc.set(pk, data, timeout):
                 return False
-            chidarr.append(chid)
-            ok = self.mc.cas(uaid, chidarr,
+            appidarr.append(appid)
+            ok = self.mc.cas(uaid, appidarr,
                              cas, self.timeout_live)
             while ok is None or not ok:
                 # mid air collision?
-                chidarr, cas = self.mc.gets(uaid)
-                if chid in chidarr:
+                appidarr, cas = self.mc.gets(uaid)
+                if appid in appidarr:
                     return False
-                chidarr.append(chid)
-                ok = self.mc.cas(uaid, chidarr, cas, self.timeout_live)
-            return super(Storage, self).register_chid(uaid, chid, logger)
+                appidarr.append(appid)
+                ok = self.mc.cas(uaid, appidarr, cas, self.timeout_live)
+            return super(Storage, self).register_appid(uaid, appid, logger)
         except Exception, e:
             warnings.warn(repr(e))
             if logger:
@@ -98,25 +103,29 @@ class Storage(SqlStorage):
             return False
         return True
 
-    def delete_chid(self, uaid, chid, logger):
-        if chid is None or uaid is None:
+    def delete_appid(self, uaid, appid, logger, clearOnly=False):
+        if appid is None or uaid is None:
             return False
         try:
-            if '.' in chid:
-                pk = chid
-                uaid, chid = chid.split('.')
+            if '.' in appid:
+                pk = appid
+                uaid, appid = appid.split('.')
             else:
-                pk = '%s.%s' % (uaid, chid)
-            chidarr, cas = self.mc.gets(uaid)
-            loc = chidarr.index(chid)
-            del chidarr[loc]
-            if not self.mc.cas(uaid, chidarr, cas):
+                pk = '%s.%s' % (uaid, appid)
+            appidarr, cas = self.mc.gets(uaid)
+            loc = appidarr.index(appid)
+            del appidarr[loc]
+            if not self.mc.cas(uaid, appidarr, cas):
                 return False
             # We don't care if we repeatedly delete this record.
             dmw = self.mc.get(pk)
-            dmw['s'] = self.DELETED
-            self.mc.set(pk, dmw, self.timeout_deleted)
-            return super(Storage, self).delete_chid(uaid, chid, logger)
+            if clearOnly:
+                self.mc.delete(pk)
+            else:
+                dmw['s'] = self.DELETED
+                self.mc.set(pk, dmw, self.timeout_deleted)
+            return super(Storage, self).delete_appid(uaid, appid,
+                                                     logger, clearOnly)
         except ValueError, e:
             return False
         except Exception, e:
@@ -133,11 +142,11 @@ class Storage(SqlStorage):
                                                 withLatest=True)
         if not data or not len(data.get('updates')):
             return {'updates': [], 'expired': []}
-        chidarr = []
+        appidarr = []
         for update in data.get('updates'):
-            chid = update['channelID']
-            chidarr.append(chid)
-            self.mc.set('%s.%s' % (uaid, chid), {
+            appid = update['channelID']
+            appidarr.append(appid)
+            self.mc.set('%s.%s' % (uaid, appid), {
                 's': self.LIVE,
                 'l': update['last'] or int(time.time()),
                 'v': update['version']}, self.timeout_live)
@@ -148,32 +157,32 @@ class Storage(SqlStorage):
             raise StorageException('No UserAgentID provided')
         try:
             result = {'updates': [], 'expired': []}
-            chidarr, cas = self.mc.gets(uaid)
-            if chidarr is None:
+            appidarr, cas = self.mc.gets(uaid)
+            if appidarr is None:
                 return result
-            keys = [uaid + '.' + chid for chid in chidarr]
+            keys = [uaid + '.' + appid for appid in appidarr]
             recs = self.mc.get_multi(keys)
-            if (len(recs) < len(chidarr)):
+            if (len(recs) < len(appidarr)):
                 return self._restore(uaid, last_accessed, logger)
-            for chid in chidarr:
-                pk = '%s.%s' % (uaid, chid)
+            for appid in appidarr:
+                pk = '%s.%s' % (uaid, appid)
                 try:
                     rec = recs[pk]
                 except KeyError:
-                    del chidarr[pk]
+                    del appidarr[pk]
                     continue
                 if last_accessed:
                     if rec['l'] < last_accessed:
                         continue
                 if rec['s'] == self.LIVE:
-                    result['updates'].append({'channelID': chid,
+                    result['updates'].append({'channelID': appid,
                                               'version': rec['v']})
                 if rec['s'] == self.DELETED:
-                    result['expired'].append(chid)
-                    del chidarr[chidarr.index(chid)]
+                    result['expired'].append(appid)
+                    del appidarr[appidarr.index(appid)]
                     self.mc.delete(pk)
             if len(result['expired']):
-                self.mc.cas(uaid, chidarr, cas)
+                self.mc.cas(uaid, appidarr, cas)
             return result
         except Exception, e:
             warnings.warn(repr(e))
@@ -190,17 +199,17 @@ class Storage(SqlStorage):
             raise StorageException('No Data specified')
         if self._uaid_is_known(uaid):
             raise StorageException('Already Loaded Data')
-        chidarr = []
+        appidarr = []
         try:
             for datum in data:
-                chid = datum.get('channelID')
-                chidarr.append(chid)
-                pk = '%s.%s' % (uaid, chid)
+                appid = datum.get('channelID')
+                appidarr.append(appid)
+                pk = '%s.%s' % (uaid, appid)
                 data = {'s': self.LIVE,
                         'l': int(time.time()),
                         'v': datum.get('version')}
                 self.mc.add(pk, data, self.timeout_live)
-            self.mc.add(uaid, chidarr)
+            self.mc.add(uaid, appidarr)
             return ','.join(self.mc.get(uaid))
         except Exception, e:
             warnings.warn(repr(e))
@@ -216,7 +225,7 @@ class Storage(SqlStorage):
                 result = super(Storage, self)._get_record(pk)
             if not result:
                 return result
-            uaid, chid = pk.split('.')
+            uaid, appid = pk.split('.')
             return {'uaid': uaid,
                     'version': result['v'],
                     'state': result['s'],
@@ -236,19 +245,19 @@ class Storage(SqlStorage):
         # delete all records that are unused older than db.clean.unused
 
     def _load(self, data=[]):
-        chids = {}
+        appids = {}
         for datum in data:
             uaid = datum['uaid']
-            if not uaid in chids:
-                chids[uaid] = []
+            if not uaid in appids:
+                appids[uaid] = []
             pk = '%s.%s' % (datum['uaid'], datum['channelID'])
             self.mc.add(pk, {'v': datum['version'],
                              'l': datum.get('last_accessed'),
                              's': datum.get('state', 1)},
                              self.timeout_live)
-            chids[uaid].append(datum['channelID'])
-        for uaid in chids:
-            self.mc.add(uaid, chids[uaid])
+            appids[uaid].append(datum['channelID'])
+        for uaid in appids:
+            self.mc.add(uaid, appids[uaid])
         super(Storage, self)._load(data)
 
     def purge(self):

@@ -1,6 +1,5 @@
-APP = 'pushsrv_ws'
 
-VERS = 1
+APP = 'pushsrv_ws'
 
 class LOG:
     EMERGENCY = 0

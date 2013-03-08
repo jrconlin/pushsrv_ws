@@ -1,10 +1,10 @@
+from constants import APP
 import logging
 import logging.config
 import json
 
 METLOG = False
 BOTO = False
-APP = "pushsrv_ws"
 
 try:
     from metlog.config import client_from_stream_config
