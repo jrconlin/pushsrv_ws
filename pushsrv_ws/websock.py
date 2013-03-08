@@ -91,8 +91,8 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
                 result, chain = chain(message)
                 self.send(result)
         except Exception, e:
-            import pdb; pdb.set_trace()
-            self.error('Unhandled exception: %s' % repr(e))
+            self.logger.log(type='error', msg=repr(e), severity=LOG.ERROR)
+            self.error('Unable to process message (see logs)')
 
     def on_connection_close(self):
         """ The connection has been severed. Attempt to garbage collect.
@@ -147,7 +147,6 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         for item in content['updates']:
             ids[item['channelID']] = item['version']
         for item in msg['expired']:
-            import pdb; pdb.set_trace()
             self.storage.delete_appid(self.uaid, item, self.logger,
                                       clearOnly=True)
         for item in msg['updates']:
@@ -186,7 +185,7 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
                       'error': err }
             try:
                 self.send(json.dumps(errmsg))
-            except Exception, e:
+            except Exception:
                 self.on_connection_close()
 
     def send(self, message):
@@ -198,6 +197,6 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         try:
             self.write_message(message)
         except Exception, e:
-            import pdb; pdb.set_trace()
-            self.error('Reply failed %s ' % repr(e), False)
+            self.logger.log(type="error", severity=LOG.ERROR,
+                            msg='Unable to send message %s ' % repr(e))
         pass

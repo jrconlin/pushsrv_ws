@@ -5,3 +5,7 @@ This version uses WebSockets to communicate with the client.
 
 See https://wiki.mozilla.org/WebAPI/SimplePush for details
 
+NOTE: This server is initially configured for stand-alone use.
+
+
+
