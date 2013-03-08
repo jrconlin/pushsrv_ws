@@ -113,6 +113,11 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
                             severity=LOG.DEBUG,
                             msg="Could not register uaid %s" % self.uaid)
             status = 500
+            # This is a bad request. Close the channel immediately.
+            self.send("messageType": "hello",
+                      "status": status,
+                      "uaid": self.uaid)
+            self.close()
         # chain the flush function to send existing data.
         # Note: For alternate protocols (e.g. UDP, initialize the calls here.)
         return ({"messageType": "hello",
