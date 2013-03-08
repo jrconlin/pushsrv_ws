@@ -1,17 +1,19 @@
 import tornado.web
 import json
 import traceback
-from utils import gen_id, get_last_accessed
+from utils import gen_id, get_last_accessed, gen_endpoint
 from .constants import LOG, VERS
 from .storage import StorageException
 
 
 class RESTPushBase(tornado.web.RequestHandler):
-    def initialize(self, config=None, storage=None, logger=None, flags=None):
+    def initialize(self, config=None, storage=None, logger=None, flags=None,
+                   dispatch=None):
         self.storage = storage
         self.logger = logger
         self.config = config
         self.flags = flags
+        self.dispatch = dispatch
 
 
 class RegisterHandler(RESTPushBase):
@@ -22,12 +24,8 @@ class RegisterHandler(RESTPushBase):
         gid = '%s.%s' % (uaid, appid)
         if self.storage.register_appid(uaid, gid, self.logger):
             self.write(json.dumps({'channelID': appid,
-                    'uaid': uaid,
-                    'pushEndpoint': '%s://%s/v%s/update/%s' % (
-                        request.protocol,
-                        request.host,
-                        VERS,
-                        gid)}))
+                              'uaid': uaid,
+                              'pushEndpoint': gen_endpoint(self.config, gid)}))
         else:
             self.send_error(409)  # CONFLICT
 
@@ -55,9 +53,9 @@ class UpdateHandler(RESTPushBase):
                                                self.logger)
         except StorageException, e:
             self.logger.log(msg=repr(e), type='error', severity=LOG.DEBUG)
-            raise self.write_error(410)  # GONE
+            return self.write_error(410)  # GONE
         if updates is False:
-            raise self.write_error(500)  # SERVER ERROR
+            return self.write_error(500)  # SERVER ERROR
         return self.write(json.dumps(updates))
 
     def post(self, arg=None, **kw):
@@ -74,19 +72,25 @@ class UpdateHandler(RESTPushBase):
         except Exception:
             self.logger.log(msg=traceback.format_exc(), type='error',
                             severity=LOG.WARN)
-            raise self.write_error(410)  # GONE
+            return self.write_error(410)  # GONE
 
     def put(self, gid=None, **kw):
         if gid is None:
             return self.write_error(403)  #
+        if not len(self.request.arguments):
+            return self.write_error(503)
         version = self.request.arguments.get('version', [])[0]
         if version is None:
             return self.send_error(403)
+        (uaid, channelID) = gid.split('.')
         try:
+            import pdb; pdb.set_trace();
             if self.storage.update_channel(gid, version, self.logger):
+                if self.dispatch:
+                    self.dispatch.queue(uaid, channelID, version)
                 return self.write(json.dumps({}))
             else:
-                raise self.write_error(503)
+                return self.write_error(503)
         except Exception, e:
             self.logger.log(msg=traceback.format_exc(), type='error',
                             severity=LOG.CRITICAL)

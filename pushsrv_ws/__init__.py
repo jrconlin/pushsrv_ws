@@ -1,4 +1,4 @@
-from tornado.options import define, options
+from tornado.options import define
 from ConfigParser import (ConfigParser, NoSectionError)
 from pushsrv_ws.views import (RegisterHandler, ItemHandler, UpdateHandler)
 import tornado.web
@@ -26,24 +26,33 @@ def main(options):
     settings_file = options.config
     configp.readfp(open(settings_file))
     config = dict(configp.items('app:main'))
+    # Live configuration options
     flags = _resolve_name(safe_get(configp, 'app:main', 'flags.backend',
                            "pushsrv_ws.storage.fakeflags.ConfigFlags"))(config)
+    # backend data storage tool
     storage = _resolve_name(safe_get(configp, 'app:main', 'db.backend',
                               "pushsrv_ws.storage.sql.Storage"))(config, flags)
+    # Logging and metrics
     logger = _resolve_name(safe_get(configp, 'app:main', 'logging.backend',
                            "pushsrv_ws.logger.Logging"))(config, settings_file)
-    """ path, handler, dict(args) """
-    init_args = {'config':config,
-                 'storage':storage,
-                 'flags':flags,
-                 'logger':logger}
+    # Websocket dispatcher
+    dispatch = _resolve_name(safe_get(configp, 'app:main', 'dispatch.backend',
+                           "pushsrv_ws.websock.WSDispatch"))(config, flags)
 
-    import pdb; pdb.set_trace()
+    # Websocket Handler (NOTE, this is initialized on call)
+    wshandler = _resolve_name(safe_get(configp, 'app:main',
+                            'websockhandler.backend',
+                            'pushsrv_ws.websock.PushWSHandler'))
+    init_args = {'config': config,
+                 'storage': storage,
+                 'flags': flags,
+                 'logger': logger,
+                 'dispatch': dispatch}
     application = tornado.web.Application([
         (r"/v1/register/([^/]*)", RegisterHandler, init_args),
         (r"/v1/update/([^/]*)", UpdateHandler, init_args),
         (r"/v1/([^/]*)", ItemHandler, init_args),
-        (r"/ws", PushWSHandler, init_args)
+        (r"/ws", wshandler, init_args)
     ], init_args)
     try:
         sconfig = dict(configp.items('server:main'))

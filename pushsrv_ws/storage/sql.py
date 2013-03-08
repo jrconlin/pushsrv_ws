@@ -104,6 +104,9 @@ class Storage(StorageBase):
                 rec.last = int(time.time())
                 session.commit()
                 return True
+            else:  # ES
+                self.register_appid(None, pk, logger, vers)
+                return True;
         except Exception, e:
             warnings.warn(repr(e))
             if logger:

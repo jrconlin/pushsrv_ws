@@ -28,6 +28,16 @@ def gen_id(**kw):
     return base
 
 
+def gen_endpoint(config, path):
+    template = config.get('endpoint.template',
+                          '{proto}://{host}/{ver}update/{path}')
+    template.format(proto=config.get('endpoint.proto', 'http'),
+                    host=config.get('endpoint.host', 'localhost:8081'),
+                    ver=config.get('endpoint.ver', 'v1/'),
+                    path=path)
+    return template
+
+
 def _resolve_name(name):
     """Resolves the name and returns the corresponding object."""
     ret = None
