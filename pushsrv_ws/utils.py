@@ -30,11 +30,10 @@ def gen_id(**kw):
 def gen_endpoint(config, path):
     template = config.get('endpoint.template',
                           '{proto}://{host}/{ver}update/{path}')
-    template.format(proto=config.get('endpoint.proto', 'http'),
-                    host=config.get('endpoint.host', 'localhost:8081'),
-                    ver=config.get('endpoint.ver', 'v1/'),
-                    path=path)
-    return template
+    return template.format(proto=config.get('endpoint.proto', 'http'),
+                           host=config.get('endpoint.host', 'localhost:8081'),
+                           ver=config.get('endpoint.ver', 'v1/'),
+                           path=path)
 
 
 def _resolve_name(name):
