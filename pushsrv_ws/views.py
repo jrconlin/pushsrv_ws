@@ -89,7 +89,7 @@ class UpdateHandler(RESTPushBase):
         try:
             if self.storage.update_channel(gid, version, self.logger):
                 if self.dispatch:
-                    self.dispatch.queue(uaid, channelID, version)
+                    self.dispatch.queue(uaid, channelID)
                 return self.write(json.dumps({}))
             else:
                 return self.write_error(503)

@@ -18,6 +18,8 @@ define("config", default="pushsrv.ini", help="Configuration file path")
 
 def safe_get(config, section, key, default=None):
     try:
+        if type(config) == dict:
+            return config.get(key, default)
         cf = dict(config.items(section))
         return cf.get(key, default)
     except Exception, e:
@@ -25,11 +27,22 @@ def safe_get(config, section, key, default=None):
         return default
 
 
-def main(options):
+def main(options, **kw):
     configp = ConfigParser()
-    settings_file = options.config
-    configp.readfp(open(settings_file))
-    config = dict(configp.items('app:main'))
+    settings_file = ''
+    try:
+        settings_file = options.config
+        configp.readfp(open(settings_file))
+        config = dict(configp.items('app:main'))
+        try:
+            sconfig = dict(configp.items('server:main'))
+        except NoSectionError:
+            sconfig = {}
+    except AttributeError:
+        if type(options) == dict:
+            config = options
+            configp = config
+            sconfig = {}
     # Live configuration options
     flags = _resolve_name(safe_get(configp, 'app:main', 'flags.backend',
                            "pushsrv_ws.storage.fakeflags.ConfigFlags"))(config)
@@ -58,10 +71,6 @@ def main(options):
         (r"/v1/([^/]*)", ItemHandler, init_args),
         (r"/ws", wshandler, init_args)
     ], init_args)
-    try:
-        sconfig = dict(configp.items('server:main'))
-    except NoSectionError:
-        sconfig = {}
     port = int(sconfig.get('port', '8081'))
     logger.log(type='debug', severity=LOG.INFO,
                msg="Starting on port %s" % port)

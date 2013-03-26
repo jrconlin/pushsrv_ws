@@ -1,48 +1,12 @@
 from .constants import LOG
+from .wsdispatch import WSDispatch
 from utils import gen_id, gen_endpoint
 import json
 import tornado.websocket
-import uuid
 
 
-class WSDispatch():
-    """ Very simple message dispatcher.
-
-        It stores a callback for each registered UAID.
-    """
-
-    _uaids={}
-
-    def __init__(self, config={}, flags={}):
-        pass
-
-    def _uuid2idx(self, uaid):
-        try:
-            idx = uuid.UUID(uaid).bytes
-        except:
-            idx = uaid
-        return idx
-
-    def register(self, uaid, callback):
-        idx = self._uuid2idx(uaid)
-        if idx not in self._uaids.keys():
-            self._uaids[idx] = callback
-            return True
-        return False
-
-    def queue(self, uaid, channelID, message):
-        idx = self._uuid2idx(uaid)
-        try:
-            if self._uaids[idx](channelID, message):
-                return True
-        except KeyError:
-          # archive message
-          pass
-        return False
-
-    def release(self, uaid):
-        idx = self._uuid2idx(uaid)
-        del self._uaids[idx]
+class WSException(Exception):
+    pass
 
 
 class PushWSHandler(tornado.websocket.WebSocketHandler):
@@ -62,11 +26,16 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         self.flags = kw.get('flags', {})
         self.logger = kw.get('logger')
         self.dispatch = kw.get('dispatch', WSDispatch())
+        self.test = kw.get('test', False)
+        if self.test:
+            self.return_buffer = ''
+        # protocol handlers
         self.funcs = {'hello': self.hello,
                       'register': self.register,
                       'unregister': self.unregister,
                       'ack': self.ack}
-        super(PushWSHandler, self).__init__(application, request)
+        if (not kw.get('test', False)):
+            super(PushWSHandler, self).__init__(application, request)
 
     # Websocket core functions
     def open(self):
@@ -77,7 +46,8 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         pass
 
     def on_message(self, message):
-        """ Handle all incoming messages and dispatch to appropriate function.
+        """ Handle all incoming websocket messages and dispatch to
+            appropriate function.
         """
         try:
             msg = json.loads(message)
@@ -95,12 +65,12 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
             self.error('Unable to process message (see logs)')
 
     def on_connection_close(self):
-        """ The connection has been severed. Attempt to garbage collect.
+        """ The websocket connection has been severed.
+            Attempt to garbage collect.
         """
         if self.uaid:
             self.dispatch.release(self.uaid)
         self.uaid = None
-        self.close()
 
     ## Protocol handler functions.
     def hello(self, msg):
@@ -108,21 +78,28 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         """
         status = 200
         self.uaid = msg['uaid'] or gen_id()
-        if not self.dispatch.register(self.uaid, self.flush):
+        if not self.dispatch.register(self.uaid, self.flush, msg):
             self.logger.log(type='error',
                             severity=LOG.DEBUG,
                             msg="Could not register uaid %s" % self.uaid)
             status = 500
             # This is a bad request. Close the channel immediately.
-            self.send("messageType": "hello",
-                      "status": status,
-                      "uaid": self.uaid)
+            try:
+                self.send({"messageType": "hello",
+                           "status": status,
+                           "uaid": self.uaid})
+            except Exception:
+                pass
             self.close()
         # chain the flush function to send existing data.
         # Note: For alternate protocols (e.g. UDP, initialize the calls here.)
         return ({"messageType": "hello",
                 "status": status,
                 "uaid": self.uaid}, self.flush)
+
+    def close(self):
+        if not self.test:
+            return super(PushWSHandler, self).close()
 
     def register(self, msg):
         """ Request a new endpoint for a channelID
@@ -177,8 +154,13 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         if len(content['updates']) or len(content['expired']):
             content['messageType'] = 'notification'
             # force a send here since we can be called outside of the chain
-            self.send(content)
+            try:
+                self.send(content)
+            except IOError:
+                self.on_connection_close()
+                self._retry()
         # Already sent content, and no additional action required
+        # remove any retransmittal timers
         return (None, None)
 
     def error(self, err, send=True):
@@ -187,11 +169,12 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         self.logger.log(type='error', msg=err, severity=LOG.DEBUG)
         if send:
             errmsg = {'messageType': 'error',
-                      'error': err }
+                      'error': err}
             try:
                 self.send(json.dumps(errmsg))
             except Exception:
                 self.on_connection_close()
+                raise
 
     def send(self, message):
         """ Return a response to the client.
@@ -200,8 +183,21 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         if message is None:
             return
         try:
-            self.write_message(message)
+            if not self.test:
+                self.write_message(message)
+            else:
+                self.return_buffer += json.dumps(message)
         except Exception, e:
             self.logger.log(type="error", severity=LOG.ERROR,
                             msg='Unable to send message %s ' % repr(e))
+            self.on_connection_close()
+            raise
+        pass
+
+    def _retry(self):
+        # Use whatever proprietary means to wake the remote device.
+        # Note: if using something like an IP ping, may want to only
+        # attempt a wake up one or two times. IP address may be
+        # reassigned, causing us to spend a lot of effort keeping someone
+        # else's phone from sleeping.
         pass

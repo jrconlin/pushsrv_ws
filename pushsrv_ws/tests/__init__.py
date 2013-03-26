@@ -38,7 +38,7 @@ class FakeLogger:
 
     def log(self, msg=None, **kw):
         kw.update({'msg': msg})
-        #pprint(kw)
+        pprint(kw)
         pass
 
 
