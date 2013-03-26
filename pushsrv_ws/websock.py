@@ -26,6 +26,7 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         self.flags = kw.get('flags', {})
         self.logger = kw.get('logger')
         self.dispatch = kw.get('dispatch', WSDispatch())
+        # unit test flag.
         self.test = kw.get('test', False)
         if self.test:
             self.return_buffer = ''
@@ -99,6 +100,8 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
                 "uaid": self.uaid}, self.flush)
 
     def close(self):
+        """ Close a websocket
+        """
         if not self.test:
             return super(PushWSHandler, self).close()
 
@@ -180,7 +183,8 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
     def send(self, message):
         """ Return a response to the client.
 
-        Overwrite for partner specific responses """
+            Overwrite for partner specific responses
+        """
         if message is None:
             return
         try:
@@ -196,9 +200,15 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         pass
 
     def _retry(self):
-        # Use whatever proprietary means to wake the remote device.
-        # Note: if using something like an IP ping, may want to only
-        # attempt a wake up one or two times. IP address may be
-        # reassigned, causing us to spend a lot of effort keeping someone
-        # else's phone from sleeping.
+        ## Use whatever proprietary means to wake the remote device.
+        ## Note: if using something like an IP ping, may want to only
+        ## attempt a wake up one or two times. IP address may be
+        ## reassigned, causing us to spend a lot of effort keeping someone
+        ## else's phone from sleeping.
+        #
+        # instance = torando.ioloop.IOLoop.instance()
+        # if self.to is None:
+        #   self.to = instance.add_timeout(self.config.get('timeout', 600),
+        #                                  self.dispatch.wakeDevice())
+        #
         pass

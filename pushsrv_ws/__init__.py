@@ -1,4 +1,4 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
+ This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """Main entry point
@@ -43,20 +43,23 @@ def main(options, **kw):
             config = options
             configp = config
             sconfig = {}
-    # Live configuration options
+    ## Live configuration options
     flags = _resolve_name(safe_get(configp, 'app:main', 'flags.backend',
                            "pushsrv_ws.storage.fakeflags.ConfigFlags"))(config)
-    # backend data storage tool
+    ## backend data storage tool
     storage = _resolve_name(safe_get(configp, 'app:main', 'db.backend',
                               "pushsrv_ws.storage.sql.Storage"))(config, flags)
-    # Logging and metrics
+    ## Logging and metrics
     logger = _resolve_name(safe_get(configp, 'app:main', 'logging.backend',
                            "pushsrv_ws.logger.Logging"))(config, settings_file)
-    # Websocket dispatcher
+    ## Websocket dispatcher
+    ## NOTE: if you're adding proprietary network elements (e.g. UDP wakeup)
+    ##   please subclass pushsrv_ws/websock.py and set the configuration to
+    ##   load the new file as the dispatch.backend
     dispatch = _resolve_name(safe_get(configp, 'app:main', 'dispatch.backend',
                            "pushsrv_ws.websock.WSDispatch"))(config, flags)
 
-    # Websocket Handler (NOTE, this is initialized on call)
+    ## Websocket Handler (NOTE, this is initialized on call)
     wshandler = _resolve_name(safe_get(configp, 'app:main',
                                        'websockhandler.backend',
                                        'pushsrv_ws.websock.PushWSHandler'))
@@ -65,6 +68,7 @@ def main(options, **kw):
                  'flags': flags,
                  'logger': logger,
                  'dispatch': dispatch}
+    ## Entry points for the REST API, including the PUT update handler
     application = tornado.web.Application([
         (r"/v1/register/([^/]*)", RegisterHandler, init_args),
         (r"/v1/update/([^/]*)", UpdateHandler, init_args),

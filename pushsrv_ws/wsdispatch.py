@@ -5,7 +5,9 @@ import uuid
 class WSDispatch():
     """ Very simple message dispatcher.
 
-        It stores a callback for each registered UAID.
+        It stores a callback for each registered UAID. Please note that
+        this may be replaced with a different dispatch system, or
+        subclassed to provide proprietary callback system.
     """
 
     _uaids={}
@@ -15,6 +17,7 @@ class WSDispatch():
 
     def _uuid2idx(self, uaid):
         """ Convert a UUID back to it's byte array equivalent.
+
             (This requires slightly less space to store and is optional)
         """
         try:
@@ -23,19 +26,13 @@ class WSDispatch():
             idx = uaid
         return idx
 
-    def wakeDevice(self):
-        """ Wake a remote device using any proprietary driver steps
-            required.
-        """
-        # There are no means defined by default to wake a device
-        pass
-
     def register(self, uaid, callback, extra={}):
         """ Register a new client as a listener.
         """
 
         ## If there are additional, proprietary driver steps and
-        ## requirements (e.g. register UDP wakeup calls).
+        ## requirements (e.g. register UDP wakeup calls), that
+        ## information should be stored using the "extra" param.
         idx = self._uuid2idx(uaid)
         if idx not in self._uaids.keys():
             self._uaids[idx] = callback
@@ -43,10 +40,10 @@ class WSDispatch():
         return False
 
     def queue(self, uaid, channelID):
-        """ Submit an update request  for a given device queue
+        """ Submit an event for a given device queue
 
-            Remember, this is a store and forward system. Be sure to
-            store the update into storage first!
+            Remember, events are actions. If there is data to track
+            place into storage first!
         """
         idx = self._uuid2idx(uaid)
         try:
@@ -54,9 +51,10 @@ class WSDispatch():
             if self._uaids[idx](uaid=uaid, channelID=channelID):
                 return True
         except Exception, e:
-            # There was a problem, (Most likely a key error
-            # Perform whatever proprietary steps are required in
-            # order to wake the remote device
+            ## There was a problem, (Most likely a key error)
+            ## Perform whatever proprietary steps are required in
+            ## order to wake the remote device. On device reconnect
+            ## the pending events are flushed to the device.
             self.logger.log(type='warning', severity=LOG.WARNING,
                             error=e)
             self.wakeDevice()
@@ -64,8 +62,15 @@ class WSDispatch():
         return False
 
     def release(self, uaid):
+        """ release a listener from actively monitoring
+        """
         idx = self._uuid2idx(uaid)
         del self._uaids[idx]
 
-
+    def wakeDevice(self):
+        """ Wake a remote device using any proprietary driver steps
+            required.
+        """
+        ## There are no means defined by default to wake a device
+        pass
 
