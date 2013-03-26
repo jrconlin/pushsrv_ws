@@ -71,6 +71,7 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         if self.uaid:
             self.dispatch.release(self.uaid)
         self.uaid = None
+        self.close()
 
     ## Protocol handler functions.
     def hello(self, msg):

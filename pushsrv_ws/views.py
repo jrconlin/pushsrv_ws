@@ -1,9 +1,11 @@
-import tornado.web
 import json
+import time
+import tornado.web
 import traceback
-from utils import gen_id, get_last_accessed, gen_endpoint
 from .constants import LOG
 from .storage import StorageException
+from datetime import datetime
+from utils import gen_id, get_last_accessed, gen_endpoint
 
 
 class RESTPushBase(tornado.web.RequestHandler):
@@ -84,7 +86,7 @@ class UpdateHandler(RESTPushBase):
             return self.write_error(503)
         version = self.request.arguments.get('version', [])[0]
         if version is None:
-            return self.send_error(403)
+            version = int(time.mktime(datetime.utcnow().timetuple()))
         (uaid, channelID) = gid.split('.')
         try:
             if self.storage.update_channel(gid, version, self.logger):
