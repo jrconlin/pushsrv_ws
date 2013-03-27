@@ -2,7 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#import memcache
 from dateutil import parser
 from inspect import stack
 import string
@@ -16,7 +15,6 @@ class StorageBase(object):
 
     def __init__(self, config, **kw):
         self.config = config
-        #self.settings = config.get_settings()
         self.settings = config
         self.alphabet = string.digits + string.letters
         self.memory = {}
@@ -38,8 +36,8 @@ class StorageBase(object):
 
     def health_check(self):
         """ Check that the current model is working correctly """
-        # Is the current memory model working?
-        return False
+        raise StorageException('No health check specified for %s' %
+                                self.__class__.__name__)
 
     def purge(self):
         """ Purge all listings (ONLY FOR TESTING) """

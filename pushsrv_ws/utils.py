@@ -1,9 +1,15 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 from email import utils as eut
 import calendar
 import uuid
 
 
 def str_to_UTC(datestr):
+    """ convert a standard HTTP-date format to UTC seconds
+    """
     secs = 0
     try:
         timet = eut.parsedate_tz(datestr)
@@ -14,6 +20,11 @@ def str_to_UTC(datestr):
 
 
 def get_last_accessed(request):
+    """ bottleneck method to pull the appropriate "last_accessed"
+        time from a given request.
+
+        (Currently uses the "If-Modified-Since" header)
+    """
     last_accessed = None
     last_accessed = None
     last_accessed_str = request.headers.get('If-Modified-Since')
@@ -23,11 +34,15 @@ def get_last_accessed(request):
 
 
 def gen_id(**kw):
+    """ Generate a globally unique ID
+    """
     base = uuid.uuid4().hex
     return base
 
 
 def gen_endpoint(config, path):
+    """ Generate a templated endpoint based on config information
+    """
     template = config.get('endpoint.template',
                           '{proto}://{host}/{ver}update/{path}')
     return template.format(proto=config.get('endpoint.proto', 'http'),
@@ -37,7 +52,8 @@ def gen_endpoint(config, path):
 
 
 def _resolve_name(name):
-    """Resolves the name and returns the corresponding object."""
+    """Resolves the python name path and returns the corresponding class.
+    """
     ret = None
     parts = name.split('.')
     cursor = len(parts)

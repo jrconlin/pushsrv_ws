@@ -1,6 +1,10 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 from .. import logger, LOG
 from pushsrv_ws.storage.sql import (Storage as SqlStorage,
-                                          StorageException)
+                                    StorageException)
 from mozsvc.storage.mcclient import MemcachedClient
 import warnings
 import time
@@ -242,7 +246,8 @@ class Storage(SqlStorage):
     def _gc(self, settings):
         if self.flags.get('recovery'):
             return
-        # delete all records marked deleted that are older than db.clean.deleted
+        # delete all records marked deleted that are older
+        #   than db.clean.deleted
         # delete all records that are unused older than db.clean.unused
 
     def _load(self, data=[]):

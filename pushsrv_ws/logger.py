@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 from constants import APP
 import logging
 import logging.config
@@ -25,6 +29,8 @@ class LoggingException(Exception):
 
 
 class Logging(object):
+    """ Logging wrapper
+    """
     metlog2log = [logging.CRITICAL, logging.CRITICAL, logging.CRITICAL,
                   logging.ERROR, logging.WARNING, logging.INFO,
                   logging.INFO, logging.DEBUG]
@@ -68,5 +74,3 @@ class Logging(object):
             rec['fields'] = json.dumps(fields)
             rec['created'] = time()
             rec.save()
-
-

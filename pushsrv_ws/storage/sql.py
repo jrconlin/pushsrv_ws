@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 import time
 import warnings
 from . import StorageBase, StorageException
@@ -40,8 +44,9 @@ class Storage(StorageBase):
         except Exception, e:
             warnings.warn(repr(e))
             if self.logger:
-                self.logger.log(msg='Could not initialize Storage "%s"' % str(e),
-                           type='error', severity=LOG.CRITICAL)
+                self.logger.log(msg='Could not initialize Storage "%s"' %
+                                str(e),
+                                type='error', severity=LOG.CRITICAL)
             raise e
 
     def _connect(self):
@@ -94,7 +99,6 @@ class Storage(StorageBase):
                             SimplePushSQL.appid == pk,
                             SimplePushSQL.state != self.DELETED).first()
             else:
-            # use memcache update.
                 rec = session.query(SimplePushSQL).filter(
                                 SimplePushSQL.pk == pk,
                                 SimplePushSQL.state != self.DELETED).first()
@@ -247,7 +251,8 @@ class Storage(StorageBase):
         if self.flags.get('recovery'):
             return
         now = time.time()
-        # delete all records marked deleted that are older than db.clean.deleted
+        # delete all records marked deleted that are older than
+        #   db.clean.deleted
         # delete all records that are unused older than db.clean.unused
 
     def _load(self, data=[]):
