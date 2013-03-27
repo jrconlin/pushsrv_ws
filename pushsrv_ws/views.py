@@ -104,3 +104,8 @@ class UpdateHandler(RESTPushBase):
                             severity=LOG.CRITICAL)
             raise e
 
+
+class StatusHandler(RESTPushBase):
+    def get(self, arg=None, **kw):
+        ## TODO: Perform simple health-checks
+        return self.write("ok")

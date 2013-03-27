@@ -38,10 +38,10 @@ class WSDispatch():
         ## requirements (e.g. register UDP wakeup calls), that
         ## information should be stored using the "extra" param.
         idx = self._uuid2idx(uaid)
-        if idx not in self._uaids.keys():
-            self._uaids[idx] = callback
-            return True
-        return False
+        if idx in self._uaids.keys():
+            self.release(uaid)
+        self._uaids[idx] = callback
+        return True
 
     def queue(self, uaid, channelID):
         """ Submit an event for a given device queue

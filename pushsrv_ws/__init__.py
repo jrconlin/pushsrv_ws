@@ -1,4 +1,4 @@
- This Source Code Form is subject to the terms of the Mozilla Public
+# This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """Main entry point
@@ -7,7 +7,8 @@
 from ConfigParser import (ConfigParser, NoSectionError)
 from pushsrv_ws.constants import LOG
 from pushsrv_ws.utils import _resolve_name
-from pushsrv_ws.views import (RegisterHandler, ItemHandler, UpdateHandler)
+from pushsrv_ws.views import (RegisterHandler, ItemHandler, UpdateHandler,
+                              StatusHandler)
 from tornado.options import define
 import tornado.web
 import tornado.websocket
@@ -73,12 +74,11 @@ def main(options, **kw):
         (r"/v1/register/([^/]*)", RegisterHandler, init_args),
         (r"/v1/update/([^/]*)", UpdateHandler, init_args),
         (r"/v1/([^/]*)", ItemHandler, init_args),
-        (r"/ws", wshandler, init_args)
+        (r"/ws/?([^/]*)", wshandler, init_args),
+        (r"/status", StatusHandler)
     ], init_args)
     port = int(sconfig.get('port', '8081'))
     logger.log(type='debug', severity=LOG.INFO,
                msg="Starting on port %s" % port)
     application.listen(port)
     tornado.ioloop.IOLoop.instance().start()
-
-

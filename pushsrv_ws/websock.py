@@ -43,11 +43,7 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
             super(PushWSHandler, self).__init__(application, request)
 
     # Websocket core functions
-    def open(self):
-        """ Perform initial websocket connection.
-
-            This is not the "hello" handshake.
-        """
+    def open(self, *args, **kw):
         pass
 
     def on_message(self, message):
@@ -70,7 +66,9 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
             self.error('Unable to process message (see logs)')
 
     def on_connection_close(self):
-        """ The websocket connection has been severed.
+        """ The websocket connection has been severed, either directly
+            by the client or indirectly via network instability.
+
             Attempt to garbage collect.
         """
         if self.uaid:
