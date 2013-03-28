@@ -44,3 +44,5 @@ class StorageBase(object):
         raise StorageException('Undefined required method: ' %
                                stack()[0][3])
 
+    def gen_pk(self, uaid, appid):
+        return ("%s.%s" % (uaid, appid))

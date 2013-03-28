@@ -47,12 +47,15 @@ def main(options, **kw):
     ## Live configuration options
     flags = _resolve_name(safe_get(configp, 'app:main', 'flags.backend',
                            "pushsrv_ws.storage.fakeflags.ConfigFlags"))(config)
+    config['flags'] = flags
     ## backend data storage tool
     storage = _resolve_name(safe_get(configp, 'app:main', 'db.backend',
                               "pushsrv_ws.storage.sql.Storage"))(config, flags)
+    config['storage'] = storage
     ## Logging and metrics
     logger = _resolve_name(safe_get(configp, 'app:main', 'logging.backend',
                            "pushsrv_ws.logger.Logging"))(config, settings_file)
+    config['logger'] = logger
     ## Websocket dispatcher
     ## NOTE: if you're adding proprietary network elements (e.g. UDP wakeup)
     ##   please subclass pushsrv_ws/websock.py and set the configuration to

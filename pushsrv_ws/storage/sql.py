@@ -18,12 +18,12 @@ class SimplePushSQL(Base):
     __tablename__ = 'simplepush_ws'
     ## this should be a multi-column index. No idea how to do that
     ## cleanly in SQLAlchemy's ORM.
-    appid = Column('appid', String(36), primary_key=True, unique=True)
+    appid = Column('appid', String(36))
     uaid = Column('uaid', String(36), index=True)
     vers = Column('version', String(36), nullable=True)
     last = Column('last_accessed', Integer, index=True)
     state = Column('state', Integer, default=1)
-    pk = Column('pk', String(70), index=True)
+    pk = Column('pk', String(70), index=True, primary_key=True, unique=True)
 
 
 class Storage(StorageBase):
@@ -127,7 +127,7 @@ class Storage(StorageBase):
                 pk = appid
                 uaid, appid = pk.split('.')
             else:
-                pk = '%s.%s' % (uaid, appid)
+                pk = self.gen_pk(uaid, appid)
             session.add(SimplePushSQL(pk=pk,
                                       uaid=uaid,
                                       appid=appid,
@@ -152,7 +152,7 @@ class Storage(StorageBase):
                 pk = appid
                 uaid, appid = appid.split('.')
             else:
-                pk = '%s.%s' % (uaid, appid)
+                pk = self.gen_pk(uaid, appid)
             rec = session.query(SimplePushSQL).filter_by(pk=pk).first()
             if rec:
                 if clearOnly:
@@ -211,16 +211,9 @@ class Storage(StorageBase):
             raise StorageException('Already Loaded Data')
         try:
             session = self.Session()
-            digest = []
             if session.query(SimplePushSQL).filter_by(uaid=uaid).count():
                 return False
-            for datum in data:
-                appid = datum.get('channelID')
-                session.add(SimplePushSQL(appid=appid,
-                                          uaid=uaid,
-                                          vers=datum.get('version')))
-                digest.append(datum.get('channelID'))
-            session.commit()
+            digest = self._load(data, {'uaid': uaid})
             return ",".join(digest)
         except Exception, e:
             warnings.warn(repr(e))
@@ -255,17 +248,21 @@ class Storage(StorageBase):
         #   db.clean.deleted
         # delete all records that are unused older than db.clean.unused
 
-    def _load(self, data=[]):
+    def _load(self, data=[], static=[]):
         session = self.Session()
+        digest = []
         for datum in data:
-            pk = '%s.%s' % (datum['uaid'], datum['channelID'])
+            datum.update(static)
+            pk = self.gen_pk(datum['uaid'], datum['channelID'])
             session.add(SimplePushSQL(pk=pk,
                                       appid=datum['channelID'],
                                       uaid=datum['uaid'],
                                       vers=datum['version'],
                                       last=datum.get('last_accessed'),
                                       state=datum.get('state', 1)))
+            digest.append(datum['channelID'])
         session.commit()
+        return digest
 
     def purge(self):
         session = self.Session()

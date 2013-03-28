@@ -7,7 +7,7 @@ class TestStorage(unittest2.TestCase):
 
     def setUp(self):
         self.storage = Storage(config=TConfig({'db.type': 'sqlite',
-                                               'db.db': ':memory:'}))
+                                               'db.db': '/tmp/test.db'}))
 
     def tearDown(self):
         self.storage.purge()
@@ -54,6 +54,7 @@ class TestStorage(unittest2.TestCase):
         self.assertEqual(len(data.get('updates')), 1)
 
     def test_reload_data(self):
+        import pdb;pdb.set_trace()
         data = self.storage.reload_data('111',
                                         [{'channelID': 'aaa', 'version': '5'},
                                          {'channelID': 'bbb', 'version': '6'}],

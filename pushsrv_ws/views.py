@@ -86,11 +86,7 @@ class UpdateHandler(RESTPushBase):
     def put(self, gid=None, **kw):
         if gid is None:
             return self.write_error(403)  #
-        if not len(self.request.arguments):
-            return self.write_error(503)
-        version = self.request.arguments.get('version', [])[0]
-        if version is None:
-            version = int(time.mktime(datetime.utcnow().timetuple()))
+        version = int(time.mktime(datetime.utcnow().timetuple()))
         (uaid, channelID) = gid.split('.')
         try:
             if self.storage.update_channel(gid, version, self.logger):

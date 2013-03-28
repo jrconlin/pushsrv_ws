@@ -4,6 +4,7 @@
 
 from .constants import LOG
 import uuid
+import logging
 
 
 class WSDispatch():
@@ -17,6 +18,7 @@ class WSDispatch():
     _uaids={}
 
     def __init__(self, config={}, flags={}):
+        self.logger = config.get('logger')
         pass
 
     def _uuid2idx(self, uaid):
@@ -54,14 +56,24 @@ class WSDispatch():
             ## if it's a live queue, send the message.
             if self._uaids[idx](uaid=uaid, channelID=channelID):
                 return True
-        except Exception, e:
+        except KeyError, e:
             ## There was a problem, (Most likely a key error)
             ## Perform whatever proprietary steps are required in
             ## order to wake the remote device. On device reconnect
             ## the pending events are flushed to the device.
-            self.logger.log(type='warning', severity=LOG.WARNING,
-                            error=e)
+            if self.logger:
+                self.logger.log(type='warning', severity=LOG.WARNING,
+                                msg="No listener for %s" % uaid)
+            else:
+                logging.warn("No listener for %s " % e)
             self.wakeDevice()
+            pass
+        except Exception, e:
+            if self.logger:
+                self.logger.log(type='error', severity=LOG.ERROR,
+                                msg=repr(e))
+            else:
+                logging.error(repr(e))
             pass
         return False
 
