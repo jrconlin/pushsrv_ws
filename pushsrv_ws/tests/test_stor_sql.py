@@ -7,7 +7,7 @@ class TestStorage(unittest2.TestCase):
 
     def setUp(self):
         self.storage = Storage(config=TConfig({'db.type': 'sqlite',
-                                               'db.db': '/tmp/test.db'}))
+                                               'db.db': ':memory:'}))
 
     def tearDown(self):
         self.storage.purge()
