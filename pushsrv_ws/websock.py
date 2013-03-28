@@ -74,7 +74,12 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         if self.uaid:
             self.dispatch.release(self.uaid)
         self.uaid = None
-        self.close()
+
+    def close(self):
+        """ Close a websocket
+        """
+        if not self.test:
+            return super(PushWSHandler, self).close()
 
     ## Protocol handler functions.
     def hello(self, msg):
@@ -100,12 +105,6 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         return ({"messageType": "hello",
                 "status": status,
                 "uaid": self.uaid}, self.flush)
-
-    def close(self):
-        """ Close a websocket
-        """
-        if not self.test:
-            return super(PushWSHandler, self).close()
 
     def register(self, msg):
         """ Request a new endpoint for a channelID
