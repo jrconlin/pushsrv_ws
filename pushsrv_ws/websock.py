@@ -38,7 +38,8 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         self.funcs = {'hello': self.hello,
                       'register': self.register,
                       'unregister': self.unregister,
-                      'ack': self.ack}
+                      'ack': self.ack,
+                      'ping': self.ping}
         if (not kw.get('test', False)):
             super(PushWSHandler, self).__init__(application, request)
 
@@ -146,6 +147,9 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
                 continue
         # if there's anything left, send it again.
         return (None, self.flush)
+
+    def ping(self, msg):
+        return({'messageType':'pong'}, None)
 
     ## Utility Functions.
     def flush(self, uaid=None, channelID=None, msg=None):
