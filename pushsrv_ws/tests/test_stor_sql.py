@@ -54,7 +54,6 @@ class TestStorage(unittest2.TestCase):
         self.assertEqual(len(data.get('updates')), 1)
 
     def test_reload_data(self):
-        import pdb;pdb.set_trace()
         data = self.storage.reload_data('111',
                                         [{'channelID': 'aaa', 'version': '5'},
                                          {'channelID': 'bbb', 'version': '6'}],

@@ -6,6 +6,7 @@ from .constants import LOG
 from .wsdispatch import WSDispatch
 from utils import gen_id, gen_endpoint
 import json
+import time
 import tornado.websocket
 
 
@@ -44,6 +45,11 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
 
     # Websocket core functions
     def open(self, *args, **kw):
+        if self.config.get('heartbeat_secs'):
+            instance = tornado.ioloop.IOLoop.instance()
+            self.hb_handle = instance.add_timeout(
+                time.time() + int(self.config.get('heartbeat_secs')),
+                self.heartbeat)
         pass
 
     def on_message(self, message):
@@ -74,12 +80,28 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         if self.uaid:
             self.dispatch.release(self.uaid)
         self.uaid = None
+        if self.hb_handle:
+            tornado.ioloop.IOLoop.instance().remove_timeout(self.hb_handle)
+            self.hb_handle = None
 
     def close(self):
         """ Close a websocket
         """
         if not self.test:
             return super(PushWSHandler, self).close()
+
+    def heartbeat(self):
+        """ This is required to keep the ELB from killing the connection.
+        """
+        instance = tornado.ioloop.IOLoop.instance()
+        if hasattr(self, 'hb_handle'):
+            instance.remove_timeout(self.hb_handle)
+        self.send({"messageType": 'heartbeat',
+                   "data": time.time()})
+        self.hb_handle = instance.add_timeout(
+            time.time() + int(self.config.get('heartbeat_secs')),
+            self.heartbeat)
+
 
     ## Protocol handler functions.
     def hello(self, msg):
@@ -207,7 +229,7 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         ## reassigned, causing us to spend a lot of effort keeping someone
         ## else's phone from sleeping.
         #
-        # instance = torando.ioloop.IOLoop.instance()
+        # instance = torando.ioloop.IOLoop.current()
         # if self.to is None:
         #   self.to = instance.add_timeout(self.config.get('timeout', 600),
         #                                  self.dispatch.wakeDevice())

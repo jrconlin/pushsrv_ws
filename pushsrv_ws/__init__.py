@@ -84,4 +84,6 @@ def main(options, **kw):
     logger.log(type='debug', severity=LOG.INFO,
                msg="Starting on port %s" % port)
     application.listen(port)
-    tornado.ioloop.IOLoop.instance().start()
+    main_loop = tornado.ioloop.IOLoop.instance()
+    main_loop.start()
+
