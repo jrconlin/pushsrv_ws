@@ -81,7 +81,7 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         if self.uaid:
             self.dispatch.release(self.uaid)
         self.uaid = None
-        if self.hb_handle:
+        if hasattr(self, 'hb_handle'):
             tornado.ioloop.IOLoop.instance().remove_timeout(self.hb_handle)
             self.hb_handle = None
 
