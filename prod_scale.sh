@@ -26,7 +26,7 @@ echo "
 # modified /etc/sshd.conf
 echo "
 UsePrivilegeSeparation no
-" >> /etc/sshd.conf
+" >> /etc/sshd/sshd_config
 
 # modified /usr/include/bits/typesizes.h
 
