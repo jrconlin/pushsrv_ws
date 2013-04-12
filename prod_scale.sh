@@ -1,6 +1,6 @@
 # Run the following as root
 
-cat sysctl_settings.txt >> /sys/sysctl.conf
+cat sysctl_settings.txt >> /etc/sysctl.conf
 
 # Increase the ipv4 port range:
 sysctl -w net.ipv4.ip_local_port_range="1024 65535"
@@ -18,11 +18,15 @@ sysctl -w net.core.netdev_max_backlog=2500
 ulimit -n 999999
 
 # modify /etc/security/limits.conf
-#  user soft nofile 50000
-#  user hard nofile 50000
+echo "
+* soft nofile 50000
+* hard nofile 50000
+" >> /etc/security/limits.conf
 
 # modified /etc/sshd.conf
-# UsePrivilegeSeparation no
+echo "
+UsePrivilegeSeparation no
+" >> /etc/sshd.conf
 
 # modified /usr/include/bits/typesizes.h
 

@@ -1,6 +1,0 @@
-ulimit -n 99999
-# sysctl -w fs.file-max=100000
-
-# Modified sshd.conf
-# UsePrivilegeSeparation no
-
