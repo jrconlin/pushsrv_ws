@@ -109,7 +109,10 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         """ Register the UAID as an active listener.
         """
         status = 200
-        self.uaid = msg['uaid'] or gen_id()
+        if 'uaid' in msg:
+            self.uaid = msg['uaid']
+        else:
+            self.uaid = gen_id()
         if not self.dispatch.register(self.uaid, self.flush, msg):
             self.logger.log(type='error',
                             severity=LOG.DEBUG,
