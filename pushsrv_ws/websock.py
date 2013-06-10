@@ -60,6 +60,7 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         try:
             msg = json.loads(message)
             mt = msg['messageType']
+            self.logger.log(type='info', msg=repr(msg), severity=LOG.INFO)
             if mt not in self.funcs.keys():
                 self.error('Unknown command: %s' % msg)
                 return
@@ -156,20 +157,22 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         """ Client is responding that has processed the channelIDs.
             Remove them from storage
         """
-        content = self.storage.get_updates(self.uaid, None, self.logger)
         ids = {}
-        for item in content['updates']:
-            ids[item['channelID']] = item['version']
-        for item in msg['expired']:
-            self.storage.delete_appid(self.uaid, item, self.logger,
-                                      clearOnly=True)
-        for item in msg['updates']:
-            try:
-                if ids[item['channelID']] == item['version']:
-                    self.storage.delete_appid(self.uaid, item['channelID'],
-                                              self.logger, clearOnly=True)
-            except KeyError:
-                continue
+        content = self.storage.get_updates(self.uaid, None, self.logger)
+        for item in content["updates"]:
+            ids[item["channelID"]] = item["version"]
+        if 'exipred' in msg:
+            for item in msg['expired']:
+                self.storage.delete_appid(self.uaid, item, self.logger,
+                                          clearOnly=True)
+        if 'updates' in msg:
+            for item in msg['updates']:
+                try:
+                    if ids[item['channelID']] == item['version']:
+                        self.storage.delete_appid(self.uaid, item['channelID'],
+                                                  self.logger, clearOnly=True)
+                except KeyError:
+                    continue
         # if there's anything left, send it again.
         return (None, self.flush)
 
