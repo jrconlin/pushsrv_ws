@@ -77,8 +77,8 @@ def main(options, **kw):
         (r"/v1/register/([^/]*)", RegisterHandler, init_args),
         (r"/v1/update/([^/]*)", UpdateHandler, init_args),
         (r"/v1/([^/]*)", ItemHandler, init_args),
-        (r"/ws/?([^/]*)", wshandler, init_args),
-        (r"/status", StatusHandler)
+        (r"/status", StatusHandler),
+        (r"/([^/]*)", wshandler, init_args),
     ], init_args)
     port = int(sconfig.get('port', '8081'))
     logger.log(type='debug', severity=LOG.INFO,
