@@ -174,7 +174,8 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         return (None, self.flush)
 
     def ping(self, msg):
-        return({"messageType":"ping", "response":"pong"}, None)
+        """ Meaningless return to keep the connection live """
+        return({"messageType":"ping", "status": 200}, None)
 
     ## Utility Functions.
     def flush(self, uaid=None, channelID=None, msg=None):
