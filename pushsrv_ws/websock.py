@@ -139,6 +139,7 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         gid = '%s.%s' % (self.uaid, msg['channelID'])
         response = {"messageType": "register",
                     "status": status,
+                    "channelID": msg['channelID'],
                     "pushEndpoint": gen_endpoint(self.config, gid) }
         return (response, None)
 
@@ -173,7 +174,7 @@ class PushWSHandler(tornado.websocket.WebSocketHandler):
         return (None, self.flush)
 
     def ping(self, msg):
-        return({'messageType':'pong'}, None)
+        return({"messageType":"ping", "response":"pong"}, None)
 
     ## Utility Functions.
     def flush(self, uaid=None, channelID=None, msg=None):
